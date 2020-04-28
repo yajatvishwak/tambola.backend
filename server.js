@@ -1,17 +1,43 @@
-var Pusher = require("pusher");
+// var Pusher = require("pusher");
 
-var pusher = new Pusher({
-  appId: "989796",
-  key: "fdb75fe73c74aba30121",
-  secret: "1eb53033cd20452da9f6",
-  cluster: "ap2",
-  encrypted: true,
-});
+// var pusher = new Pusher({
+//   appId: "989796",
+//   key: "fdb75fe73c74aba30121",
+//   secret: "1eb53033cd20452da9f6",
+//   cluster: "ap2",
+//   encrypted: true,
+// });
+
+//Websocket Implementation
+const WebSocketServer = require("ws").Server;
+const wss = new WebSocketServer({ port: 2222 });
 const uniqueRandomRange = require("unique-random-range");
-let rand = uniqueRandomRange(1, 99);
+
+//broadcasting message
+wss.broadcast = function broadcast(msg) {
+  console.log(msg);
+  wss.clients.forEach(function each(client) {
+    client.send(msg);
+  });
+};
+
+// Socket initiliazation
+wss.on("connection", (ws) => {
+  console.info("websocket connection open");
+
+  if (ws.readyState === ws.OPEN) {
+    ws.send(
+      JSON.stringify({
+        message: "0",
+      })
+    );
+  }
+});
+
+let rand = uniqueRandomRange(1, 89);
 let seq = [];
 let done = [];
-for (var i = 1; i <= 99; i++) {
+for (var i = 1; i <= 89; i++) {
   seq.push(rand());
 }
 
@@ -49,60 +75,92 @@ app.post("/", (req, res) => {
   var arr = req.body.ticket;
   //console.log(done);
   //done = [69, 23, 98, 89, 13, 66, 59, 87, 37, 86, 93, 96, 19, 88, 74];
+  var notdone = [];
   for (var i = 0; i < arr.length; i++) {
     if (done.indexOf(arr[i]) == -1) {
+      notdone.push(arr[i]);
       win = false;
     }
   }
   if (win == false || arr.length == 0) {
     console.log("BRUHHH... He did not win");
+    res.send(
+      "Awhhh No! These numbers are still not called :( Play on! The Numbers: " +
+        notdone
+    );
   } else {
     var me;
-    if (req.body.type == "FR") {
+    if (req.body.type == "FR" && r1 == false) {
       me = "First row won by :" + req.body.name;
       r1 = true;
-    } else if (req.body.type == "SR") {
+    } else if (req.body.type == "SR" && r2 == false) {
       me = "Second row won by :" + req.body.name;
       r2 = true;
-    } else if (req.body.type == "TR") {
+    } else if (req.body.type == "TR" && r3 == false) {
       me = "Third row won by :" + req.body.name;
       r3 = true;
-    } else {
+    } else if (req.body.type == "FH" && fh == false) {
       me = "Full House won by :" + req.body.name;
       fh = true;
+    } else {
+      me = "Someone already won this or Invalid request";
     }
     winner.push(me);
-    pusher.trigger("my-channel", "win", {
-      message: me,
-      gameOver: (r1 && r2 && r3 && fh) || fh ? true : false,
-    });
+    // pusher.trigger("my-channel", "win", {
+    //   message: me,
+    //   gameOver: (r1 && r2 && r3 && fh) || fh ? true : false,
+    // });
+
+    wss.broadcast(
+      JSON.stringify({
+        channel: "win",
+        message: me,
+        gameOver: (r1 && r2 && r3 && fh) || fh ? true : false,
+      })
+    );
     console.log("He won... how am i supposed to tell everyone?? ");
   }
+});
+// *to return a ticket
+app.post("/getTicket", (req, res) => {
+  var userID = req.body.userID;
+  User.findOne({ userID: userID }, (err, doc) => {
+    if (doc) {
+      res.send(doc.ticket);
+    } else {
+      res.send("error");
+    }
+  });
 });
 
 //* Push new number to all connected devices
 app.post("/next", (req, res) => {
   console.log(req.body.pass);
+  if (l >= 99) {
+    res.send("All numbers done!");
+  }
   if (req.body.pass == "lemmein") {
-    pusher.trigger("my-channel", "my-event", {
-      message: seq[l],
-    });
-
+    wss.broadcast(JSON.stringify({ channel: "number", number: seq[l] }));
     done.push(seq[l]);
     l++;
     console.log(done);
-    res.send("Done: ");
+    res.send("Number of digits Done: " + (l + 1));
   }
 });
 
-// * login credentials
-app.post("/login", (req, res) => {});
-
-//return winner
+// * return winner
 app.get("/winner", (req, res) => {
+  if (winner.length == 0) {
+    res.send("No Winner yet, Play on! :)");
+  }
   res.send(winner);
 });
 
+app.get("/done", (req, res) => {
+  res.send(done);
+});
+
+// * login credentials
 app.post("/auth", (req, res) => {
   const username = req.body.userID;
   const password = req.body.password;
@@ -114,9 +172,33 @@ app.post("/auth", (req, res) => {
   User.findOne(query, (err, doc) => {
     if (doc) {
       console.log(doc);
-      res.json(true);
+
+      let rand = uniqueRandomRange(1, 89);
+      let ticketArr1 = [];
+      let ticketArr2 = [];
+      let ticketArr3 = [];
+      for (var i = 0; i < 5; i++) {
+        ticketArr1.push(rand());
+        ticketArr2.push(rand());
+        ticketArr3.push(rand());
+      }
+
+      var ticketArr = [ticketArr1, ticketArr2, ticketArr3];
+      console.log(ticketArr);
+      var up = { ticket: ticketArr };
+      if (doc.ticket.length == 0) {
+        User.update({ userID: doc.userID }, up)
+          .then(console.log("updated"))
+          .catch((e) => {
+            console.log(e);
+          });
+      }
+      res.json({
+        isauth: true,
+        tick: doc.ticket.length == 0 ? ticketArr : doc.ticket,
+      });
     } else {
-      res.json(false);
+      res.json({ isauth: false, tick: null });
     }
   });
 });
@@ -129,6 +211,8 @@ mongoose
   })
   .then(() => {
     console.log("yoyoyo its connected");
-    app.listen(port, () => console.log(`listening on port : ${port}`));
+    app.listen(port, () =>
+      console.log(`listening on port : ${port} WS on port: 2222`)
+    );
   })
   .catch(() => console.log("Nononono Couldnt connect to server"));

@@ -6,6 +6,7 @@ var UserSchema = new Schema(
     _id: false,
     userID: { type: String },
     password: String,
+    ticket: [[Number]],
   },
   { collection: "collection" }
 );
