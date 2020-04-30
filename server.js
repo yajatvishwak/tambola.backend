@@ -63,6 +63,7 @@ app.use(bodyParser.json());
 
 //* Session variables
 var winner = [];
+var winnersobj = { test: "lol" };
 var r1 = false;
 var r2 = false;
 var r3 = false;
@@ -91,21 +92,34 @@ app.post("/", (req, res) => {
   } else {
     var me;
     if (req.body.type == "FR" && r1 == false) {
-      me = "First row won by :" + req.body.name;
+      me = "First row won by :" + req.body.name + " \n";
       r1 = true;
+      winnersobj.fr = req.body.name;
     } else if (req.body.type == "SR" && r2 == false) {
-      me = "Second row won by :" + req.body.name;
+      me = "Second row won by :" + req.body.name + " \n";
       r2 = true;
+      winnersobj.sr = req.body.name;
     } else if (req.body.type == "TR" && r3 == false) {
-      me = "Third row won by :" + req.body.name;
+      me = "Third row won by :" + req.body.name + " \n";
       r3 = true;
+      winnersobj.tr = req.body.name;
     } else if (req.body.type == "FH" && fh == false) {
-      me = "Full House won by :" + req.body.name;
+      me = "Full House won by :" + req.body.name + " \n";
       fh = true;
+      winnersobj.fh = req.body.name;
+      if (r1 == false) {
+        winnersobj.fh = req.body.name;
+      } else if (r2 == false) {
+        winnersobj.sr = req.body.name;
+      } else if (r3 == false) {
+        winnersobj.tr = req.body.name;
+      } else {
+      }
     } else {
-      me = "Someone already won this or Invalid request";
+      me = "Someone already won this or Invalid request \n";
     }
     winner.push(me);
+
     // pusher.trigger("my-channel", "win", {
     //   message: me,
     //   gameOver: (r1 && r2 && r3 && fh) || fh ? true : false,
@@ -136,7 +150,7 @@ app.post("/getTicket", (req, res) => {
 //* Push new number to all connected devices
 app.post("/next", (req, res) => {
   console.log(req.body.pass);
-  if (l >= 99) {
+  if (l >= 89) {
     res.send("All numbers done!");
   }
   if (req.body.pass == "lemmein") {
@@ -144,7 +158,7 @@ app.post("/next", (req, res) => {
     done.push(seq[l]);
     l++;
     console.log(done);
-    res.send("Number of digits Done: " + (l + 1));
+    res.send({ Number: seq[l], totalNumbersDone: l, allNumbersDone: done });
   }
 });
 
@@ -152,8 +166,17 @@ app.post("/next", (req, res) => {
 app.get("/winner", (req, res) => {
   if (winner.length == 0) {
     res.send("No Winner yet, Play on! :)");
+  } else {
+    res.send(winner);
   }
-  res.send(winner);
+});
+app.get("/winnersobj", (req, res) => {
+  if (winner.length == 0) {
+    res.send(null);
+  } else {
+    //console.log(winnersobj);
+    res.send(winnersobj);
+  }
 });
 
 app.get("/done", (req, res) => {
@@ -173,18 +196,22 @@ app.post("/auth", (req, res) => {
     if (doc) {
       console.log(doc);
 
-      let rand = uniqueRandomRange(1, 89);
+      let rand1 = uniqueRandomRange(1, 89);
       let ticketArr1 = [];
       let ticketArr2 = [];
       let ticketArr3 = [];
       for (var i = 0; i < 5; i++) {
-        ticketArr1.push(rand());
-        ticketArr2.push(rand());
-        ticketArr3.push(rand());
+        ticketArr1.push(rand1());
+        ticketArr2.push(rand1());
+        ticketArr3.push(rand1());
       }
+      ticketArr1 = ticketArr1.sort();
+      ticketArr2 = ticketArr2.sort();
+      ticketArr3 = ticketArr3.sort();
 
-      var ticketArr = [ticketArr1, ticketArr2, ticketArr3];
+      var ticketArr = [ticketArr1.sort(), ticketArr2.sort(), ticketArr3.sort()];
       console.log(ticketArr);
+
       var up = { ticket: ticketArr };
       if (doc.ticket.length == 0) {
         User.update({ userID: doc.userID }, up)
