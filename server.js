@@ -63,7 +63,7 @@ app.use(bodyParser.json());
 
 //* Session variables
 var winner = [];
-var winnersobj = { test: "lol" };
+var winnersobj = {};
 var r1 = false;
 var r2 = false;
 var r3 = false;
@@ -74,10 +74,13 @@ app.post("/", (req, res) => {
   console.log(req.body);
   var win = true;
   var arr = req.body.ticket;
-  //console.log(done);
-  //done = [69, 23, 98, 89, 13, 66, 59, 87, 37, 86, 93, 96, 19, 88, 74];
   var notdone = [];
-  for (var i = 0; i < arr.length; i++) {
+  //done = [18, 72, 73, 80, 89];
+  var looplen = 5;
+  if (req.body.type == "FH") {
+    looplen = 15;
+  }
+  for (var i = 0; i < looplen; i++) {
     if (done.indexOf(arr[i]) == -1) {
       notdone.push(arr[i]);
       win = false;
@@ -119,11 +122,6 @@ app.post("/", (req, res) => {
       me = "Someone already won this or Invalid request \n";
     }
     winner.push(me);
-
-    // pusher.trigger("my-channel", "win", {
-    //   message: me,
-    //   gameOver: (r1 && r2 && r3 && fh) || fh ? true : false,
-    // });
 
     wss.broadcast(
       JSON.stringify({
