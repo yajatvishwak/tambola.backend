@@ -1,13 +1,3 @@
-// var Pusher = require("pusher");
-
-// var pusher = new Pusher({
-//   appId: "989796",
-//   key: "fdb75fe73c74aba30121",
-//   secret: "1eb53033cd20452da9f6",
-//   cluster: "ap2",
-//   encrypted: true,
-// });
-
 //Websocket Implementation
 const WebSocketServer = require("ws").Server;
 const wss = new WebSocketServer({ port: 2222 });
@@ -41,12 +31,7 @@ for (var i = 1; i <= 89; i++) {
   seq.push(rand());
 }
 
-let l = 0;
-
-// pusher.trigger("my-channel", "my-event", {
-//   message: Math.floor(Math.random() * 100),
-// });
-//pusher.disconnect();
+var l = 0;
 
 // * express
 const express = require("express");
@@ -62,8 +47,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 //* Session variables
-var winner = [];
-var winnersobj = {};
+var winnersobj = { test: "lo" };
 var r1 = false;
 var r2 = false;
 var r3 = false;
@@ -72,65 +56,144 @@ var fh = false;
 // * Core- result engine
 app.post("/", (req, res) => {
   console.log(req.body);
-  var win = true;
-  var arr = req.body.ticket;
-  var notdone = [];
-  //done = [18, 72, 73, 80, 89];
-  var looplen = 5;
-  if (req.body.type == "FH") {
-    looplen = 15;
-  }
-  for (var i = 0; i < looplen; i++) {
-    if (done.indexOf(arr[i]) == -1) {
-      notdone.push(arr[i]);
-      win = false;
+  var fr = [];
+  var sr = [];
+  var tr = [];
+
+  //distribute and make players current ticket
+  for (var i = 0; i < req.body.ticket.length; i++) {
+    var tt = req.body.ticket[i];
+    if (tt.row == "FR") {
+      fr.push(tt.value);
+    } else if (tt.row == "SR") {
+      sr.push(tt.value);
+    } else {
+      tr.push(tt.value);
     }
   }
-  if (win == false || arr.length == 0) {
-    console.log("BRUHHH... He did not win");
-    res.send(
-      "Awhhh No! These numbers are still not called :( Play on! The Numbers: " +
-        notdone
-    );
+  console.log("Current Ticket");
+  console.log([fr, sr, tr]);
+  done = [
+    18,
+    72,
+    73,
+    80,
+    89,
+    13,
+    40,
+    51,
+    55,
+    84,
+    21,
+    22,
+    27,
+    48,
+    60,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+  ];
+
+  const isWinner = (arr, category, name) => {
+    if (
+      (arr.length < 5 && category == "FR") ||
+      (arr.length < 5 && category == "SR") ||
+      (arr.length < 5 && category == "TR")
+    ) {
+      return {
+        win: false,
+        category: "Not All Numbers are called. Please check ",
+        type: category,
+      };
+    } else if (arr.length < 15 && category == "FH") {
+      console.log(arr);
+      return {
+        win: false,
+        category: "Not All Numbers are called. Please check ",
+        type: category,
+      };
+    } else {
+      var win = true;
+      for (var i = 0; i < arr.length; i++) {
+        if (done.indexOf(arr[i]) == -1) {
+          win = false;
+        }
+      }
+      return {
+        win: win,
+        type: category,
+        category: category + " won by: " + name,
+      };
+    }
+  };
+
+  var win = { win: false, category: "" };
+  var chk = false;
+  var name = req.body.name;
+  if (req.body.type == "FR" && r1 == false) {
+    win = isWinner(fr, "FR", name);
+  } else if (req.body.type == "SR" && r2 == false) {
+    win = isWinner(sr, "SR", name);
+  } else if (req.body.type == "TR" && r3 == false) {
+    win = isWinner(tr, "TR", name);
+  } else if (req.body.type == "FH" && fh == false) {
+    win = isWinner([fr, sr, tr].flat(), "FH", name);
   } else {
-    var me;
-    if (req.body.type == "FR" && r1 == false) {
-      me = "First row won by :" + req.body.name + " \n";
-      r1 = true;
-      winnersobj.fr = req.body.name;
-    } else if (req.body.type == "SR" && r2 == false) {
-      me = "Second row won by :" + req.body.name + " \n";
-      r2 = true;
-      winnersobj.sr = req.body.name;
-    } else if (req.body.type == "TR" && r3 == false) {
-      me = "Third row won by :" + req.body.name + " \n";
-      r3 = true;
-      winnersobj.tr = req.body.name;
-    } else if (req.body.type == "FH" && fh == false) {
-      me = "Full House won by :" + req.body.name + " \n";
-      fh = true;
-      winnersobj.fh = req.body.name;
-      if (r1 == false) {
-        winnersobj.fh = req.body.name;
-      } else if (r2 == false) {
+    chk = true;
+    res.send("Some one else already won this category! ");
+  }
+  if (chk == false) {
+    if (win.win) {
+      if (win.type == "FR") {
+        r1 = true;
+        winnersobj.fr = req.body.name;
+      } else if (win.type == "SR") {
+        r2 = true;
         winnersobj.sr = req.body.name;
-      } else if (r3 == false) {
+      } else if (win.type == "TR") {
+        r3 = true;
         winnersobj.tr = req.body.name;
+      } else if (win.type == "FH") {
+        fh = true;
+        winnersobj.fh = req.body.name;
+        if (r1 == false) {
+          winnersobj.fr = req.body.name;
+        }
+        if (r2 == false) {
+          winnersobj.sr = req.body.name;
+        }
+        if (r3 == false) {
+          winnersobj.tr = req.body.name;
+        }
       } else {
       }
+      wss.broadcast(
+        JSON.stringify({
+          channel: "win",
+          message: win.category,
+          gameOver: (r1 && r2 && r3 && fh) || fh ? true : false,
+        })
+      );
     } else {
-      me = "Someone already won this or Invalid request \n";
+      if (win.type == "FR") {
+        res.send(win.category + " First Row");
+      } else if (win.type == "SR") {
+        res.send(win.category + " Second Row");
+      } else if (win.type == "TR") {
+        res.send(win.category + " Third Row");
+      } else {
+        res.send(win.category);
+      }
     }
-    winner.push(me);
-
-    wss.broadcast(
-      JSON.stringify({
-        channel: "win",
-        message: me,
-        gameOver: (r1 && r2 && r3 && fh) || fh ? true : false,
-      })
-    );
-    console.log("He won... how am i supposed to tell everyone?? ");
   }
 });
 // *to return a ticket
@@ -161,20 +224,8 @@ app.post("/next", (req, res) => {
 });
 
 // * return winner
-app.get("/winner", (req, res) => {
-  if (winner.length == 0) {
-    res.send("No Winner yet, Play on! :)");
-  } else {
-    res.send(winner);
-  }
-});
 app.get("/winnersobj", (req, res) => {
-  if (winner.length == 0) {
-    res.send(null);
-  } else {
-    //console.log(winnersobj);
-    res.send(winnersobj);
-  }
+  res.send(winnersobj);
 });
 
 app.get("/done", (req, res) => {
