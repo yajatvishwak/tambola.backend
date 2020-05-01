@@ -73,35 +73,6 @@ app.post("/", (req, res) => {
   }
   console.log("Current Ticket");
   console.log([fr, sr, tr]);
-  done = [
-    18,
-    72,
-    73,
-    80,
-    89,
-    13,
-    40,
-    51,
-    55,
-    84,
-    21,
-    22,
-    27,
-    48,
-    60,
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-    8,
-    9,
-    10,
-    11,
-    12,
-  ];
 
   const isWinner = (arr, category, name) => {
     if (
@@ -122,17 +93,32 @@ app.post("/", (req, res) => {
         type: category,
       };
     } else {
-      var win = true;
+      var win1 = true;
+      console.log(arr);
+      var notdone = [];
       for (var i = 0; i < arr.length; i++) {
         if (done.indexOf(arr[i]) == -1) {
-          win = false;
+          win1 = false;
+          notdone.push(arr[i]);
         }
       }
-      return {
-        win: win,
-        type: category,
-        category: category + " won by: " + name,
-      };
+      console.log(done);
+      console.log(win1);
+      if (win1 == false) {
+        return {
+          win: win1,
+          type: category,
+          category:
+            "Awh no few numbers from your row are still not called. Play on!" +
+            notdone,
+        };
+      } else {
+        return {
+          win: win1,
+          type: category,
+          category: category + " won by: " + name,
+        };
+      }
     }
   };
 
@@ -146,13 +132,14 @@ app.post("/", (req, res) => {
   } else if (req.body.type == "TR" && r3 == false) {
     win = isWinner(tr, "TR", name);
   } else if (req.body.type == "FH" && fh == false) {
-    win = isWinner([fr, sr, tr].flat(), "FH", name);
+    var a = [].concat.apply([], [fr, sr, tr]);
+    win = isWinner(a, "FH", name);
   } else {
     chk = true;
     res.send("Some one else already won this category! ");
   }
   if (chk == false) {
-    if (win.win) {
+    if (win.win == true) {
       if (win.type == "FR") {
         r1 = true;
         winnersobj.fr = req.body.name;
