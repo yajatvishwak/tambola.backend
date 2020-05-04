@@ -2,6 +2,7 @@
 const WebSocketServer = require("ws").Server;
 const wss = new WebSocketServer({ port: 2222 });
 const uniqueRandomRange = require("unique-random-range");
+const axios = require("axios");
 
 //broadcasting message
 wss.broadcast = function broadcast(msg) {
@@ -27,7 +28,7 @@ wss.on("connection", (ws) => {
 let rand = uniqueRandomRange(1, 89);
 let seq = [];
 let done = [];
-for (var i = 1; i <= 89; i++) {
+for (var i = 1; i <= 90; i++) {
   seq.push(rand());
 }
 
@@ -52,6 +53,7 @@ var r1 = false;
 var r2 = false;
 var r3 = false;
 var fh = false;
+var pause = false;
 
 // * Core- result engine
 app.post("/", (req, res) => {
@@ -198,7 +200,7 @@ app.post("/getTicket", (req, res) => {
 //* Push new number to all connected devices
 app.post("/next", (req, res) => {
   console.log(req.body.pass);
-  if (l >= 89) {
+  if (l >= 90) {
     res.send("All numbers done!");
   }
   if (req.body.pass == "lemmein") {
@@ -223,47 +225,147 @@ app.get("/done", (req, res) => {
 app.post("/auth", (req, res) => {
   const username = req.body.userID;
   const password = req.body.password;
-  console.log(username);
+  console.log("INCOMING: " + username);
   const query = {
     userID: username,
     password: password,
   };
   User.findOne(query, (err, doc) => {
     if (doc) {
-      console.log(doc);
+      // * Generating ticket - OLD ALGORITHM
 
-      let rand1 = uniqueRandomRange(1, 89);
-      let ticketArr1 = [];
-      let ticketArr2 = [];
-      let ticketArr3 = [];
-      for (var i = 0; i < 5; i++) {
-        ticketArr1.push(rand1());
-        ticketArr2.push(rand1());
-        ticketArr3.push(rand1());
+      // let rand1 = uniqueRandomRange(1, 89);
+      // let ticketArr1 = [];
+      // let ticketArr2 = [];
+      // let ticketArr3 = [];
+      // for (var i = 0; i < 5; i++) {
+      //   ticketArr1.push(rand1());
+      //   ticketArr2.push(rand1());
+      //   ticketArr3.push(rand1());
+      // }
+      // ticketArr1 = ticketArr1.sort();
+      // ticketArr2 = ticketArr2.sort();
+      // ticketArr3 = ticketArr3.sort();
+
+      // * Generating ticket - OLD ALGORITHM -END
+      // * Generating ticket - NEW ALGORITHM V2
+      var choosingList = [];
+      for (var i = 1; i <= 89; i += 10) {
+        var start = i;
+        var end = i + 9;
+        var t = [];
+        for (var j = start; j <= end; j++) {
+          t.push(j);
+        }
+        choosingList.push(t);
       }
-      ticketArr1 = ticketArr1.sort();
-      ticketArr2 = ticketArr2.sort();
-      ticketArr3 = ticketArr3.sort();
+      const randomArrChoosinator = (list) => {
+        // ! POINT OF PERFORMANCE ISSUE
+        var result = [];
+        while (true) {
+          var arr = list[Math.floor(Math.random() * list.length)];
+          if (result.length == 5) {
+            break;
+          }
+          var isPresent = false;
+          for (var i = 0; i < result.length; i++) {
+            if (arr[0] == result[i][0]) {
+              isPresent = true;
+            }
+          }
+          if (isPresent == false) {
+            result.push(arr);
+          } else {
+            continue;
+          }
+        }
+        return result;
+      };
 
-      var ticketArr = [ticketArr1.sort(), ticketArr2.sort(), ticketArr3.sort()];
-      console.log(ticketArr);
+      var ticketArr1 = [];
+      var ticketArr2 = [];
+      var ticketArr3 = [];
+      var pushed = [];
+
+      const generateRow = () => {
+        var arrop = [];
+        var rand5arr = randomArrChoosinator(choosingList); //chooses 5 random ranges
+        rand5arr.sort(); //sorts
+        for (var i = 0; i < rand5arr.length; i++) {
+          var arr = rand5arr[i];
+          var killswitch = 0;
+          var randomElement = arr[Math.floor(Math.random() * arr.length)];
+          while (killswitch <= 50) {
+            if (pushed.indexOf(randomElement) == -1) {
+              arrop.push(randomElement);
+              pushed.push(randomElement);
+              break;
+            }
+            killswitch++;
+          }
+        }
+        return arrop;
+      };
+      ticketArr1 = generateRow();
+      ticketArr2 = generateRow();
+      ticketArr3 = generateRow();
+
+      var ticketArr = [ticketArr1, ticketArr2, ticketArr3];
+      // * Generating ticket - NEW ALGORITHM V2 - ENS
+      //console.log(ticketArr);
 
       var up = { ticket: ticketArr };
       if (doc.ticket.length == 0) {
         User.update({ userID: doc.userID }, up)
-          .then(console.log("updated"))
+          .then(console.log("updated ticket"))
           .catch((e) => {
             console.log(e);
           });
       }
+      console.log("AUTH SUCCESFUL: " + username);
       res.json({
         isauth: true,
         tick: doc.ticket.length == 0 ? ticketArr : doc.ticket,
       });
     } else {
+      console.log("AUTH UNSUCCESFUL: " + username);
       res.json({ isauth: false, tick: null });
     }
   });
+});
+
+app.post("/startGame", (req, res) => {
+  pause = false;
+  if (req.body.pass == "lemmein" && pause == false) {
+    var interID = setInterval(() => {
+      if (pause) {
+        clearInterval(interID);
+      } else {
+        axios
+          .post("http://192.168.43.1:3000/next", {
+            pass: "lemmein",
+          })
+          .then(function (response) {
+            console.log(response.data);
+          })
+          .catch(function (error) {
+            console.log(error);
+          });
+      }
+    }, 5000);
+
+    res.send("Game started! to pause POST /pauseGame ");
+  } else {
+    res.send(null);
+  }
+});
+app.post("/pauseGame", (req, res) => {
+  if (req.body.pass == "lemmein") {
+    pause = true;
+    res.send("Paused game to resume POST /startGame");
+  } else {
+    res.send(null);
+  }
 });
 
 //* database connection
