@@ -249,67 +249,68 @@ app.post("/auth", (req, res) => {
 
       // * Generating ticket - OLD ALGORITHM -END
       // * Generating ticket - NEW ALGORITHM V2
-      var ticketArr1 = [];
-      var ticketArr2 = [];
-      var ticketArr3 = [];
-      var pushed = [];
-      function getRandomInt(min, max) {
-        min = Math.ceil(min);
-        max = Math.floor(max);
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-      }
-      function compare(a, b) {
-        if (a < b) {
-          return -1;
-        } else if (a > b) {
-          return 1;
-        } else {
-          return 0;
+      if (doc.ticket.length == 0) {
+        var ticketArr1 = [];
+        var ticketArr2 = [];
+        var ticketArr3 = [];
+        var pushed = [];
+        function getRandomInt(min, max) {
+          min = Math.ceil(min);
+          max = Math.floor(max);
+          return Math.floor(Math.random() * (max - min + 1)) + min;
         }
-      }
-
-      const makeAGuessForEveryCat = () => {
-        var arr = [];
-        for (var i = 1; i <= 89; i += 10) {
-          var start = i;
-          var end = i + 9;
-          var t = getRandomInt(start, end);
-          arr.push(t);
-        }
-        return arr;
-      };
-
-      const choose5numbers = (array) => {
-        var arr = [];
-        while (arr.length !== 5) {
-          var ele = array[Math.floor(Math.random() * array.length)];
-          if (pushed.indexOf(ele) == -1) {
-            pushed.push(ele);
-            arr.push(ele);
+        function compare(a, b) {
+          if (a < b) {
+            return -1;
+          } else if (a > b) {
+            return 1;
           } else {
-            console.log("changin numb");
+            return 0;
           }
         }
-        return arr;
-      };
-      ticketArr1 = makeAGuessForEveryCat();
-      ticketArr1 = choose5numbers(ticketArr1);
-      ticketArr1 = ticketArr1.sort(compare);
 
-      ticketArr2 = makeAGuessForEveryCat();
-      ticketArr2 = choose5numbers(ticketArr2);
-      ticketArr2 = ticketArr2.sort(compare);
+        const makeAGuessForEveryCat = () => {
+          var arr = [];
+          for (var i = 1; i <= 89; i += 10) {
+            var start = i;
+            var end = i + 9;
+            var t = getRandomInt(start, end);
+            arr.push(t);
+          }
+          return arr;
+        };
 
-      ticketArr3 = makeAGuessForEveryCat();
-      ticketArr3 = choose5numbers(ticketArr3);
-      ticketArr3 = ticketArr3.sort(compare);
-      console.log(ticketArr1);
-      var ticketArr = [ticketArr1, ticketArr2, ticketArr3];
-      // * Generating ticket - NEW ALGORITHM V2 - ENS
-      //console.log(ticketArr);
+        const choose5numbers = (array) => {
+          var arr = [];
+          while (arr.length !== 5) {
+            var ele = array[Math.floor(Math.random() * array.length)];
+            if (pushed.indexOf(ele) == -1) {
+              pushed.push(ele);
+              arr.push(ele);
+            } else {
+              console.log("changin numb");
+            }
+          }
+          return arr;
+        };
+        ticketArr1 = makeAGuessForEveryCat();
+        ticketArr1 = choose5numbers(ticketArr1);
+        ticketArr1 = ticketArr1.sort(compare);
 
-      var up = { ticket: ticketArr };
-      if (doc.ticket.length == 0) {
+        ticketArr2 = makeAGuessForEveryCat();
+        ticketArr2 = choose5numbers(ticketArr2);
+        ticketArr2 = ticketArr2.sort(compare);
+
+        ticketArr3 = makeAGuessForEveryCat();
+        ticketArr3 = choose5numbers(ticketArr3);
+        ticketArr3 = ticketArr3.sort(compare);
+        console.log(ticketArr1);
+        var ticketArr = [ticketArr1, ticketArr2, ticketArr3];
+        // * Generating ticket - NEW ALGORITHM V2 - ENS
+        //console.log(ticketArr);
+
+        var up = { ticket: ticketArr };
+
         User.update({ userID: doc.userID }, up)
           .then(console.log("updated ticket"))
           .catch((e) => {
