@@ -293,15 +293,13 @@ app.post("/auth", (req, res) => {
         rand5arr.sort(); //sorts
         for (var i = 0; i < rand5arr.length; i++) {
           var arr = rand5arr[i];
-          var killswitch = 0;
           var randomElement = arr[Math.floor(Math.random() * arr.length)];
-          while (killswitch <= 50) {
+          while (arrop.length <= 5) {
             if (pushed.indexOf(randomElement) == -1) {
               arrop.push(randomElement);
               pushed.push(randomElement);
               break;
             }
-            killswitch++;
           }
         }
         return arrop;
