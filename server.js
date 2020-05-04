@@ -262,11 +262,9 @@ app.post("/auth", (req, res) => {
       const randomArrChoosinator = (list) => {
         // ! POINT OF PERFORMANCE ISSUE
         var result = [];
-        while (true) {
+        while (result.length <= 5) {
           var arr = list[Math.floor(Math.random() * list.length)];
-          if (result.length == 5) {
-            break;
-          }
+
           var isPresent = false;
           for (var i = 0; i < result.length; i++) {
             if (arr[0] == result[i][0]) {
