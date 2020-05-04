@@ -249,63 +249,61 @@ app.post("/auth", (req, res) => {
 
       // * Generating ticket - OLD ALGORITHM -END
       // * Generating ticket - NEW ALGORITHM V2
-      var choosingList = [];
-      for (var i = 1; i <= 89; i += 10) {
-        var start = i;
-        var end = i + 9;
-        var t = [];
-        for (var j = start; j <= end; j++) {
-          t.push(j);
-        }
-        choosingList.push(t);
-      }
-      const randomArrChoosinator = (list) => {
-        // ! POINT OF PERFORMANCE ISSUE
-        var result = [];
-        while (result.length <= 5) {
-          var arr = list[Math.floor(Math.random() * list.length)];
-
-          var isPresent = false;
-          for (var i = 0; i < result.length; i++) {
-            if (arr[0] == result[i][0]) {
-              isPresent = true;
-            }
-          }
-          if (isPresent == false) {
-            result.push(arr);
-          } else {
-            continue;
-          }
-        }
-        return result;
-      };
-
       var ticketArr1 = [];
       var ticketArr2 = [];
       var ticketArr3 = [];
       var pushed = [];
+      function getRandomInt(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+      function compare(a, b) {
+        if (a < b) {
+          return -1;
+        } else if (a > b) {
+          return 1;
+        } else {
+          return 0;
+        }
+      }
 
-      const generateRow = () => {
-        var arrop = [];
-        var rand5arr = randomArrChoosinator(choosingList); //chooses 5 random ranges
-        rand5arr.sort(); //sorts
-        for (var i = 0; i < rand5arr.length; i++) {
-          var arr = rand5arr[i];
-          var randomElement = arr[Math.floor(Math.random() * arr.length)];
-          while (arrop.length <= 5) {
-            if (pushed.indexOf(randomElement) == -1) {
-              arrop.push(randomElement);
-              pushed.push(randomElement);
-              break;
-            }
+      const makeAGuessForEveryCat = () => {
+        var arr = [];
+        for (var i = 1; i <= 89; i += 10) {
+          var start = i;
+          var end = i + 9;
+          var t = getRandomInt(start, end);
+          arr.push(t);
+        }
+        return arr;
+      };
+
+      const choose5numbers = (array) => {
+        var arr = [];
+        while (arr.length !== 5) {
+          var ele = array[Math.floor(Math.random() * array.length)];
+          if (pushed.indexOf(ele) == -1) {
+            pushed.push(ele);
+            arr.push(ele);
+          } else {
+            console.log("changin numb");
           }
         }
-        return arrop;
+        return arr;
       };
-      ticketArr1 = generateRow();
-      ticketArr2 = generateRow();
-      ticketArr3 = generateRow();
+      ticketArr1 = makeAGuessForEveryCat();
+      ticketArr1 = choose5numbers(ticketArr1);
+      ticketArr1 = ticketArr1.sort(compare);
 
+      ticketArr2 = makeAGuessForEveryCat();
+      ticketArr2 = choose5numbers(ticketArr2);
+      ticketArr2 = ticketArr2.sort(compare);
+
+      ticketArr3 = makeAGuessForEveryCat();
+      ticketArr3 = choose5numbers(ticketArr3);
+      ticketArr3 = ticketArr3.sort(compare);
+      console.log(ticketArr1);
       var ticketArr = [ticketArr1, ticketArr2, ticketArr3];
       // * Generating ticket - NEW ALGORITHM V2 - ENS
       //console.log(ticketArr);
