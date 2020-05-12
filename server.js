@@ -1,8 +1,9 @@
 //Websocket Implementation
 const WebSocketServer = require("ws").Server;
 const wss = new WebSocketServer({ port: 2222 });
-const uniqueRandomRange = require("unique-random-range");
+
 const axios = require("axios");
+var connectedUsers = 0;
 
 //broadcasting message
 wss.broadcast = function broadcast(msg) {
@@ -14,7 +15,12 @@ wss.broadcast = function broadcast(msg) {
 
 // Socket initiliazation
 wss.on("connection", (ws) => {
-  console.info("websocket connection open");
+  console.info("Client app opened");
+  var connectedClient = 0;
+  wss.clients.forEach(function each(client) {
+    connectedClient++;
+  });
+  connectedUsers = connectedClient;
 
   if (ws.readyState === ws.OPEN) {
     ws.send(
@@ -25,14 +31,31 @@ wss.on("connection", (ws) => {
   }
 });
 
-let rand = uniqueRandomRange(1, 89);
-let seq = [];
-let done = [];
-for (var i = 1; i <= 90; i++) {
-  seq.push(rand());
+// Calling numbers
+
+// function calling random number
+
+// http://stackoverflow.com/questions/962802#962890
+function shuffle(array) {
+  var tmp,
+    current,
+    top = array.length;
+  if (top)
+    while (--top) {
+      current = Math.floor(Math.random() * (top + 1));
+      tmp = array[current];
+      array[current] = array[top];
+      array[top] = tmp;
+    }
+  return array;
 }
 
-var l = 0;
+for (var a = [], i = 0; i < 90; ++i) a[i] = i + 1;
+a = shuffle(a);
+
+let seq = [];
+let done = [];
+seq = a;
 
 // * express
 const express = require("express");
@@ -40,6 +63,7 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const User = require("./models/user");
+var authUsers = [];
 
 const app = express();
 const port = 3000;
@@ -49,6 +73,7 @@ app.use(bodyParser.json());
 
 //* Session variables
 var winnersobj = { test: "lo" };
+var l = 0;
 var r1 = false;
 var r2 = false;
 var r3 = false;
@@ -232,22 +257,6 @@ app.post("/auth", (req, res) => {
   };
   User.findOne(query, (err, doc) => {
     if (doc) {
-      // * Generating ticket - OLD ALGORITHM
-
-      // let rand1 = uniqueRandomRange(1, 89);
-      // let ticketArr1 = [];
-      // let ticketArr2 = [];
-      // let ticketArr3 = [];
-      // for (var i = 0; i < 5; i++) {
-      //   ticketArr1.push(rand1());
-      //   ticketArr2.push(rand1());
-      //   ticketArr3.push(rand1());
-      // }
-      // ticketArr1 = ticketArr1.sort();
-      // ticketArr2 = ticketArr2.sort();
-      // ticketArr3 = ticketArr3.sort();
-
-      // * Generating ticket - OLD ALGORITHM -END
       // * Generating ticket - NEW ALGORITHM V2
       if (doc.ticket.length == 0) {
         var ticketArr1 = [];
@@ -306,7 +315,7 @@ app.post("/auth", (req, res) => {
         ticketArr3 = ticketArr3.sort(compare);
         console.log(ticketArr1);
         var ticketArr = [ticketArr1, ticketArr2, ticketArr3];
-        // * Generating ticket - NEW ALGORITHM V2 - ENS
+        // * Generating ticket - NEW ALGORITHM V2 - END
         //console.log(ticketArr);
 
         var up = { ticket: ticketArr };
@@ -318,6 +327,7 @@ app.post("/auth", (req, res) => {
           });
       }
       console.log("AUTH SUCCESFUL: " + username);
+      authUsers = [...Array.from(new Set(authUsers)), username];
       res.json({
         isauth: true,
         tick: doc.ticket.length == 0 ? ticketArr : doc.ticket,
@@ -329,8 +339,10 @@ app.post("/auth", (req, res) => {
   });
 });
 
+//Start Game
 app.post("/startGame", (req, res) => {
   pause = false;
+
   if (req.body.pass == "lemmein" && pause == false) {
     var interID = setInterval(() => {
       if (pause) {
@@ -347,13 +359,15 @@ app.post("/startGame", (req, res) => {
             console.log(error);
           });
       }
-    }, 5000);
+    }, 10000);
 
     res.send("Game started! to pause POST /pauseGame ");
   } else {
     res.send(null);
   }
 });
+
+// Pause game
 app.post("/pauseGame", (req, res) => {
   if (req.body.pass == "lemmein") {
     pause = true;
@@ -361,6 +375,17 @@ app.post("/pauseGame", (req, res) => {
   } else {
     res.send(null);
   }
+});
+
+//Return  Stats
+app.get("/getStats", (req, res) => {
+  res.send({
+    connectedUsers: connectedUsers,
+    winners: winnersobj,
+    authUsers: authUsers,
+    done: done,
+    allNo: seq,
+  });
 });
 
 //* database connection
@@ -375,4 +400,4 @@ mongoose
       console.log(`listening on port : ${port} WS on port: 2222`)
     );
   })
-  .catch(() => console.log("Nononono Couldnt connect to server"));
+  .catch(() => console.log("Nononono Couldnt connect to db server"));
