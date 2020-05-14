@@ -349,7 +349,7 @@ app.post("/startGame", (req, res) => {
         clearInterval(interID);
       } else {
         axios
-          .post("http://192.168.43.1:3000/next", {
+          .post("http://172.105.55.249:3000/next", {
             pass: "lemmein",
           })
           .then(function (response) {
