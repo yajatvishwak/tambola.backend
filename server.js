@@ -102,6 +102,26 @@ app.post("/", (req, res) => {
   console.log([fr, sr, tr]);
 
   const isWinner = (arr, category, name) => {
+    // Didnt write because of boredom...
+
+    // if (category == "BE") {
+    //   var ube = 0;
+    //   User.findOne({ userID: name }, (err, doc) => {
+    //     if (doc) {
+    //       ube = doc.be;
+    //     }
+    //   });
+    //   for (var i = 0; i < arr.length; i++) {
+    //     if (done.indexOf(arr[i]) == -1 && ube == arr[i]) {
+    //       return {
+    //         win: true,
+    //         type: category,
+    //         category: category + "won by" + name,
+    //       };
+    //     }
+    //   }
+    // }
+
     if (
       (arr.length < 5 && category == "FR") ||
       (arr.length < 5 && category == "SR") ||
@@ -131,6 +151,7 @@ app.post("/", (req, res) => {
       }
       console.log(done);
       console.log(win1);
+
       if (win1 == false) {
         return {
           win: win1,
